@@ -27,6 +27,7 @@ import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Mail
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.MaterialTheme.colorScheme
@@ -58,6 +59,9 @@ fun Signup(navController: NavHostController) {
     val offsetY = remember { Animatable(2000f) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var name by remember {
+        mutableStateOf("")
+    }
     var email by remember {
         mutableStateOf("")
     }
@@ -111,6 +115,28 @@ fun Signup(navController: NavHostController) {
                 )
             }
             Spacer(modifier = Modifier.height(40.dp))
+            OutlinedTextField(
+                value = name, onValueChange = { name = it },
+                colors = TextFieldDefaults.textFieldColors(
+                    textColor = colorScheme.onBackground,
+                    disabledTextColor = colorScheme.onBackground,
+                    leadingIconColor = colorScheme.onBackground,
+                    trailingIconColor = colorScheme.onBackground,
+                    focusedIndicatorColor = colorScheme.onBackground,
+                    unfocusedIndicatorColor = colorScheme.onBackground,
+                    disabledIndicatorColor = colorScheme.onBackground,
+                    focusedLabelColor = colorScheme.onBackground,
+                    unfocusedLabelColor = colorScheme.onBackground,
+                    cursorColor = colorScheme.onBackground,
+                    placeholderColor = colorScheme.onBackground
+                ),
+                leadingIcon = {
+                    Icon(imageVector = Icons.Outlined.Person, contentDescription = null)
+                },
+                label = { Text(text = "Name") }, shape = RoundedCornerShape(20.dp),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(20.dp))
             OutlinedTextField(
                 value = email, onValueChange = { email = it },
                 colors = TextFieldDefaults.textFieldColors(
@@ -169,12 +195,12 @@ fun Signup(navController: NavHostController) {
                 colorScheme.primary), modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 60.dp)) {
-                Text(text = "Sign p", fontWeight = FontWeight.SemiBold, color = colorScheme.background)
+                Text(text = "Sign up", fontWeight = FontWeight.SemiBold, color = colorScheme.background)
             }
             Spacer(modifier = Modifier.height(20.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Text(text = "Don't have an account?", color = colorScheme.onBackground)
-                Text(text = "Sign up", color = colorScheme.primary, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable {
+                Text(text = "Already have an account?", color = colorScheme.onBackground)
+                Text(text = "Log in", color = colorScheme.primary, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable {
                     navController.navigate(AppNavComp.Signup.destination){
                         popUpTo(0)
                     }

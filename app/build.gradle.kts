@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -56,6 +57,9 @@ dependencies {
     implementation ("androidx.compose.material:material:1.7.0")
     implementation ("androidx.compose.material:material-icons-extended:1.7.0")
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
 
     //navigation
     val nav_version = "2.7.7"
