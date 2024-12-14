@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import uk.ac.tees.mad.tt.screen.Login
+import uk.ac.tees.mad.tt.screen.Signup
 import uk.ac.tees.mad.tt.screen.Splash
 
 @Composable
@@ -18,6 +19,9 @@ fun AppNavigation() {
             }
             composable(AppNavComp.Login.destination) {
                 Login(navController)
+            }
+            composable(AppNavComp.Signup.destination) {
+                Signup(navController)
             }
         }
     }
