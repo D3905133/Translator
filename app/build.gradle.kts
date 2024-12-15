@@ -61,6 +61,8 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
 
+    implementation ("com.github.developwithishfaq:easy-translator:3.3.0")
+
     //navigation
     val nav_version = "2.7.7"
     implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
@@ -83,6 +85,8 @@ dependencies {
     implementation("io.coil-kt:coil:2.6.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
 
+    implementation ("com.google.firebase:firebase-ml-natural-language:22.0.1")
+    implementation ("com.google.firebase:firebase-ml-natural-language-translate-model:20.0.9")
 
     //ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")

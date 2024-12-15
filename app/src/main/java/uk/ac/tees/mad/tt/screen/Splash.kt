@@ -23,19 +23,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import uk.ac.tees.mad.tt.R
+import uk.ac.tees.mad.tt.TranlatorViewmodel
 import uk.ac.tees.mad.tt.navigation.AppNavComp
 import uk.ac.tees.mad.tt.navigation.AppNavigation
 
 @Composable
-fun Splash(navController: NavHostController) {
+fun Splash(navController: NavHostController,viewModel: TranlatorViewmodel) {
     val scale = remember {
         Animatable(0f)
     }
     LaunchedEffect(Unit) {
         scale.animateTo(2f, animationSpec = tween(1000, easing = LinearEasing))
         scale.animateTo(1f, animationSpec = tween(1000, easing = LinearEasing))
-        navController.navigate(AppNavComp.Login.destination){
-            popUpTo(0)
+        if (viewModel.loggedIn.value){
+            navController.navigate(AppNavComp.Home.destination){
+                popUpTo(0)
+            }
+        }else {
+            navController.navigate(AppNavComp.Login.destination) {
+                popUpTo(0)
+            }
         }
     }
     Column(

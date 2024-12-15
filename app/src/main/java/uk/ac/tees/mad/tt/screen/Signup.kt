@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
+import androidx.compose.material.LinearProgressIndicator
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextFieldDefaults
@@ -41,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,10 +54,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
 import uk.ac.tees.mad.tt.R
+import uk.ac.tees.mad.tt.TranlatorViewmodel
 import uk.ac.tees.mad.tt.navigation.AppNavComp
 
 @Composable
-fun Signup(navController: NavHostController) {
+fun Signup(navController: NavHostController, viewModel: TranlatorViewmodel) {
     val offsetY = remember { Animatable(2000f) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -70,6 +73,12 @@ fun Signup(navController: NavHostController) {
     }
     val isPasswordVisible = remember {
         mutableStateOf(false)
+    }
+    val loading = viewModel.loadingInApp
+    val loggedIn = viewModel.loggedIn
+
+    if (loggedIn.value){
+        navController.navigate(AppNavComp.Home.destination)
     }
 
     LaunchedEffect(Unit) {
@@ -191,7 +200,7 @@ fun Signup(navController: NavHostController) {
                 visualTransformation = if (isPasswordVisible.value) VisualTransformation.None else PasswordVisualTransformation()
             )
             Spacer(modifier = Modifier.height(20.dp))
-            Button(onClick = { /*TODO*/ }, shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(
+            Button(onClick = { viewModel.signUp(context, name, email, password) }, shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(
                 colorScheme.primary), modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 60.dp)) {
@@ -206,6 +215,11 @@ fun Signup(navController: NavHostController) {
                     }
                 }
                 )
+            }
+        }
+        if(loading.value){
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center){
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
         }
     }
