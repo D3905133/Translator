@@ -10,7 +10,9 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,12 +26,15 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import kotlinx.coroutines.delay
 import uk.ac.tees.mad.tt.TranlatorViewmodel
+import uk.ac.tees.mad.tt.navigation.AppNavComp
 
 private const val REQUEST_RECORD_AUDIO_PERMISSION_CODE = 1
 
@@ -47,183 +52,218 @@ fun Home(navController: NavHostController, viewModel: TranlatorViewmodel) {
         viewModel.getAvailableLanguages(context)
     }
 
+    val isSuccess = remember { mutableStateOf(false) }
+    val result = remember { mutableStateOf("") }
+
+    val isLoading = viewModel.loadingInApp
     val availableLanguages = viewModel.availableLanguages
     var expandedFrom by remember { mutableStateOf(false) }
     var expandedTo by remember { mutableStateOf(false) }
-    var selectedFromLanguage by remember { mutableStateOf(availableLanguages.value?.get(0)?.name ?: "") }
+    var selectedFromLanguage by remember {
+        mutableStateOf(
+            availableLanguages.value?.get(0)?.name ?: ""
+        )
+    }
     var selectedToLanguage by remember { mutableStateOf("") }
-    val filteredLanguages = availableLanguages.value?.filter { it.name != "AUTO_DETECT" } ?: emptyList()
+    val filteredLanguages =
+        availableLanguages.value?.filter { it.name != "AUTO_DETECT" } ?: emptyList()
 
     if (!hasMicrophonePermission) {
         requestMicrophonePermission(activity)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp)
-            .navigationBarsPadding()
-            .statusBarsPadding(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        OutlinedTextField(
-            value = textToTranslate,
-            onValueChange = { textToTranslate = it },
-            colors = TextFieldDefaults.textFieldColors(
-                textColor = colorScheme.onBackground,
-                cursorColor = colorScheme.onBackground
-            ),
-            leadingIcon = {
-                Icon(imageVector = Icons.Outlined.Translate, contentDescription = null)
-            },
-            trailingIcon = {
-                Column {
-                    Icon(
-                        imageVector = Icons.Outlined.ContentPaste,
-                        contentDescription = null,
-                        modifier = Modifier.clickable {
-                            pasteFromClipboard(context) { pastedText ->
-                                textToTranslate = pastedText
-                            }
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Icon(
-                        imageVector = Icons.Outlined.Mic,
-                        contentDescription = null,
-                        modifier = Modifier.clickable {
-                            if (checkMicrophonePermission(context)) {
-                                isRecording = true // Set to true when starting
-                                startVoiceRecognition(
-                                    context,
-                                    speechRecognizer,
-                                    onResult = { recognizedText ->
-                                        textToTranslate = recognizedText
-                                        isRecording = false // Reset after getting result
-                                    },
-                                    onError = {
-                                        isRecording = false // Reset if error occurs
-                                    })
-                            } else {
-                                requestMicrophonePermission(context as Activity)
-                            }
-                        }
-                    )
-                }
-            },
-            label = { Text(text = "Write/Paste Text to Translate") },
-            shape = RoundedCornerShape(20.dp),
-            singleLine = false,
-            minLines = 10,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 10.dp)
-        )
-
-        if (isRecording) {
-            Text(
-                "Listening...",
-                color = colorScheme.primary,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            CircularProgressIndicator(color = colorScheme.primary, modifier = Modifier.size(24.dp))
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp)
-        ) {
-            Text(text = "From:", modifier = Modifier.align(Alignment.CenterVertically))
-            ExposedDropdownMenuBox(
-                expanded = expandedFrom,
-                onExpandedChange = { expandedFrom = !expandedFrom }) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = selectedFromLanguage,
-                    onValueChange = {},
-                    shape = RoundedCornerShape(20.dp),
-                    label = { Text("Select Language") },
-                    trailingIcon = {
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                    },
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = colorScheme.background,
-                        cursorColor = colorScheme.onBackground
-                    )
-                )
-
-                ExposedDropdownMenu(
-                    expanded = expandedFrom,
-                    onDismissRequest = { expandedFrom = false }
-                ) {
-                    availableLanguages.value!!.forEach { language ->
-                        DropdownMenuItem(onClick = {
-                            selectedFromLanguage = language.name
-                            expandedFrom = false
-                        }) {
-                            Text(text = language.name)
-                        }
-                    }
-                }
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp)
-        ) {
-            Text(text = "To:    ", modifier = Modifier.align(Alignment.CenterVertically))
-            ExposedDropdownMenuBox(
-                expanded = expandedTo,
-                onExpandedChange = { expandedTo = !expandedTo }) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = selectedToLanguage,
-                    onValueChange = {},
-                    shape = RoundedCornerShape(20.dp),
-                    label = { Text("Select Language") },
-                    trailingIcon = {
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                    },
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = colorScheme.background,
-                        cursorColor = colorScheme.onBackground
-                    )
-                )
-
-                ExposedDropdownMenu(
-                    expanded = expandedTo,
-                    onDismissRequest = { expandedTo = false }
-                ) {
-                    filteredLanguages.forEach { language ->
-                        DropdownMenuItem(onClick = {
-                            selectedToLanguage = language.name
-                            expandedTo = false
-                        }) {
-                            Text(text = language.name)
-                        }
-                    }
-                }
-            }
-        }
-
-        Button(onClick = {
-            viewModel.translateToData(context = context, textToTranslate, selectedFromLanguage, selectedToLanguage, onSuccessful = {
-                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-            })
-        }) {
-            Text(text = "Translate")
+    LaunchedEffect(isSuccess.value) {
+        if (isSuccess.value){
+            navController.navigate(AppNavComp.Result.createRoute(textToTranslate, result.value, selectedFromLanguage, selectedToLanguage))
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            speechRecognizer.destroy()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp)
+                .navigationBarsPadding()
+                .statusBarsPadding(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = textToTranslate,
+                onValueChange = { textToTranslate = it },
+                colors = TextFieldDefaults.textFieldColors(
+                    textColor = colorScheme.onBackground,
+                    cursorColor = colorScheme.onBackground
+                ),
+                leadingIcon = {
+                    Icon(imageVector = Icons.Outlined.Translate, contentDescription = null)
+                },
+                trailingIcon = {
+                    Column {
+                        Icon(
+                            imageVector = Icons.Outlined.ContentPaste,
+                            contentDescription = null,
+                            modifier = Modifier.clickable {
+                                pasteFromClipboard(context) { pastedText ->
+                                    textToTranslate = pastedText
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Icon(
+                            imageVector = Icons.Outlined.Mic,
+                            contentDescription = null,
+                            modifier = Modifier.clickable {
+                                if (checkMicrophonePermission(context)) {
+                                    isRecording = true // Set to true when starting
+                                    startVoiceRecognition(
+                                        context,
+                                        speechRecognizer,
+                                        onResult = { recognizedText ->
+                                            textToTranslate = recognizedText
+                                            isRecording = false // Reset after getting result
+                                        },
+                                        onError = {
+                                            isRecording = false // Reset if error occurs
+                                        })
+                                } else {
+                                    requestMicrophonePermission(context as Activity)
+                                }
+                            }
+                        )
+                    }
+                },
+                label = { Text(text = "Write/Paste Text to Translate") },
+                shape = RoundedCornerShape(20.dp),
+                singleLine = false,
+                minLines = 10,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+            )
+
+            if (isRecording) {
+                Text(
+                    "Listening...",
+                    color = colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+                CircularProgressIndicator(
+                    color = colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp)
+            ) {
+                Text(text = "From:", modifier = Modifier.align(Alignment.CenterVertically))
+                ExposedDropdownMenuBox(
+                    expanded = expandedFrom,
+                    onExpandedChange = { expandedFrom = !expandedFrom }) {
+                    OutlinedTextField(
+                        readOnly = true,
+                        value = selectedFromLanguage,
+                        onValueChange = {},
+                        shape = RoundedCornerShape(20.dp),
+                        label = { Text("Select Language") },
+                        trailingIcon = {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        },
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = colorScheme.background,
+                            cursorColor = colorScheme.onBackground
+                        )
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expandedFrom,
+                        onDismissRequest = { expandedFrom = false }
+                    ) {
+                        availableLanguages.value!!.forEach { language ->
+                            DropdownMenuItem(onClick = {
+                                selectedFromLanguage = language.name
+                                expandedFrom = false
+                            }) {
+                                Text(text = language.name)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 10.dp)
+            ) {
+                Text(text = "To:    ", modifier = Modifier.align(Alignment.CenterVertically))
+                ExposedDropdownMenuBox(
+                    expanded = expandedTo,
+                    onExpandedChange = { expandedTo = !expandedTo }) {
+                    OutlinedTextField(
+                        readOnly = true,
+                        value = selectedToLanguage,
+                        onValueChange = {},
+                        shape = RoundedCornerShape(20.dp),
+                        label = { Text("Select Language") },
+                        trailingIcon = {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        },
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = colorScheme.background,
+                            cursorColor = colorScheme.onBackground
+                        )
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expandedTo,
+                        onDismissRequest = { expandedTo = false }
+                    ) {
+                        filteredLanguages.forEach { language ->
+                            DropdownMenuItem(onClick = {
+                                selectedToLanguage = language.name
+                                expandedTo = false
+                            }) {
+                                Text(text = language.name)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button(onClick = {
+                //navigateToDetais(navController, selectedFromLanguage, "it", selectedFromLanguage, selectedToLanguage)
+                viewModel.translateToData(
+                    context = context,
+                    textToTranslate,
+                    selectedFromLanguage,
+                    selectedToLanguage,
+                    onSuccessful = {
+                        Toast.makeText(context, "Translation Successful", Toast.LENGTH_SHORT).show()
+                        Log.d("Navigation1","Navigation called in the lambda")
+                        result.value = it
+                        Log.d("Result", result.value)
+                        isSuccess.value = true
+                    })
+            }) {
+                Text(text = "Translate")
+            }
+        }
+
+        DisposableEffect(Unit) {
+            onDispose {
+                speechRecognizer.destroy()
+            }
+        }
+        if (isLoading.value){
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center){
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
         }
     }
 }
@@ -237,6 +277,11 @@ private fun pasteFromClipboard(context: Context, onPaste: (String) -> Unit) {
         val pastedText = item.text?.toString() ?: ""
         onPaste(pastedText)
     }
+}
+
+private fun navigateToDetais(navController: NavHostController, from: String, result: String, fromLang: String, toLang: String){
+    Log.d("Navigation2","Navigation called in the function")
+    navController.navigate(AppNavComp.Result.createRoute(from, result, fromLang, toLang))
 }
 
 private fun checkMicrophonePermission(context: Context): Boolean {

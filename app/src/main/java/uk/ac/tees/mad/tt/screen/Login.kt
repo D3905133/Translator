@@ -74,8 +74,12 @@ fun Login(navController: NavHostController, translatorViewModel : TranlatorViewm
     val loading = translatorViewModel.loadingInApp
     val loggedIn = translatorViewModel.loggedIn
 
-    if (loggedIn.value){
-        navController.navigate(AppNavComp.Home.destination)
+    LaunchedEffect(loggedIn.value) {
+        if (loggedIn.value){
+            navController.navigate(AppNavComp.Home.destination){
+                popUpTo(0)
+            }
+        }
     }
 
     LaunchedEffect(Unit) {

@@ -77,9 +77,14 @@ fun Signup(navController: NavHostController, viewModel: TranlatorViewmodel) {
     val loading = viewModel.loadingInApp
     val loggedIn = viewModel.loggedIn
 
-    if (loggedIn.value){
-        navController.navigate(AppNavComp.Home.destination)
+    LaunchedEffect(loggedIn.value) {
+        if (loggedIn.value){
+            navController.navigate(AppNavComp.Home.destination){
+                popUpTo(0)
+            }
+        }
     }
+
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -218,7 +223,9 @@ fun Signup(navController: NavHostController, viewModel: TranlatorViewmodel) {
             }
         }
         if(loading.value){
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center){
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center){
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
         }
