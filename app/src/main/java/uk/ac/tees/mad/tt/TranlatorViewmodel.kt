@@ -83,20 +83,35 @@ class TranlatorViewmodel @Inject constructor(
         Log.d("Fetched Available Languages", "getAvailableLanguages: ${availableLanguages.value}")
     }
 
-    fun translateToData(context: Context, text: String) {
-        val translate = EasyTranslator(context)
-        translate.translate(
-            text = text,
-            LanguagesModel.AUTO_DETECT,
-            LanguagesModel.HINDI,{result->
-                Log.d("TAG", "translateToData: $result")
-            },{error->
-                Log.d("TAG", "translateToData: $error")
-            }
-        )
-
+    fun getLanguageEnum(language: String): LanguagesModel? {
+        return LanguagesModel.values().find {
+            it.langName.equals(language, ignoreCase = true) || it.shortCode.equals(language, ignoreCase = true)
+        }
     }
 
+    fun translateToData(context: Context, text: String, from: String, to: String, onSuccessful: (String) -> Unit) {
+        loadingInApp.value = true
+        val translate = EasyTranslator(context)
+        Log.d("TAG", "translateToData: $text, $from, $to")
+
+        val fromLang = getLanguageEnum(from) ?: LanguagesModel.AUTO_DETECT
+        val toLang = getLanguageEnum(to) ?: LanguagesModel.HINDI
+
+        translate.translate(
+            text = text,
+            fromLang,
+            toLang,
+            { result ->
+                loadingInApp.value = false
+                Log.d("TAG", "translateToData: $result")
+                onSuccessful(result)
+            },
+            { error ->
+                loadingInApp.value = false
+                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
 
 
 }

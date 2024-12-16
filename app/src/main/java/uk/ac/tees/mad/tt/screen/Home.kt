@@ -213,7 +213,9 @@ fun Home(navController: NavHostController, viewModel: TranlatorViewmodel) {
         }
 
         Button(onClick = {
-            viewModel.translateToData(context = context, textToTranslate)
+            viewModel.translateToData(context = context, textToTranslate, selectedFromLanguage, selectedToLanguage, onSuccessful = {
+                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            })
         }) {
             Text(text = "Translate")
         }
