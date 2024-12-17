@@ -19,6 +19,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Speaker
 import androidx.compose.runtime.Composable
@@ -105,7 +106,9 @@ fun Result(navHostController: NavHostController,viewmodel: TranlatorViewmodel, f
                         contentDescription = "copy result",
                         modifier = Modifier
                             .clickable {
-                                Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
+                                Toast
+                                    .makeText(context, "Copied", Toast.LENGTH_SHORT)
+                                    .show()
                                 clipboardManager.setText(AnnotatedString(result))
                             }
                             .padding(8.dp)
@@ -113,6 +116,7 @@ fun Result(navHostController: NavHostController,viewmodel: TranlatorViewmodel, f
                 }
             }
         }
+        Icon(imageVector = Icons.Outlined.Save, contentDescription = "save to database",modifier = Modifier.align(Alignment.End).padding(end = 40.dp))
     }
 }
 
