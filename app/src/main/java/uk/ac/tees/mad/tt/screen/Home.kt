@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Translate
@@ -33,6 +34,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import uk.ac.tees.mad.tt.TranlatorViewmodel
 import uk.ac.tees.mad.tt.navigation.AppNavComp
 
@@ -43,6 +45,11 @@ private const val REQUEST_RECORD_AUDIO_PERMISSION_CODE = 1
 fun Home(navController: NavHostController, viewModel: TranlatorViewmodel) {
     val context = LocalContext.current
     val activity = (context as? Activity) ?: return
+
+    // Drawer state
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
     var textToTranslate by remember { mutableStateOf("") }
     val speechRecognizer = remember { SpeechRecognizer.createSpeechRecognizer(context) }
     var hasMicrophonePermission by remember { mutableStateOf(checkMicrophonePermission(context)) }
@@ -54,6 +61,7 @@ fun Home(navController: NavHostController, viewModel: TranlatorViewmodel) {
 
     val isSuccess = remember { mutableStateOf(false) }
     val result = remember { mutableStateOf("") }
+    val userData = viewModel.userData
 
     val isLoading = viewModel.loadingInApp
     val availableLanguages = viewModel.availableLanguages
@@ -73,198 +81,256 @@ fun Home(navController: NavHostController, viewModel: TranlatorViewmodel) {
     }
 
     LaunchedEffect(isSuccess.value) {
-        if (isSuccess.value){
-            navController.navigate(AppNavComp.Result.createRoute(textToTranslate, result.value, selectedFromLanguage, selectedToLanguage))
+        if (isSuccess.value) {
+            navController.navigate(
+                AppNavComp.Result.createRoute(
+                    textToTranslate,
+                    result.value,
+                    selectedFromLanguage,
+                    selectedToLanguage
+                )
+            )
         }
     }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
+    ModalDrawer(
+        modifier = Modifier.statusBarsPadding(),
+        drawerState = drawerState,
+        drawerContent = {
+            Column(modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp)
-                .navigationBarsPadding()
-                .statusBarsPadding(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            OutlinedTextField(
-                value = textToTranslate,
-                onValueChange = { textToTranslate = it },
-                colors = TextFieldDefaults.textFieldColors(
-                    textColor = colorScheme.onBackground,
-                    cursorColor = colorScheme.onBackground
-                ),
-                leadingIcon = {
-                    Icon(imageVector = Icons.Outlined.Translate, contentDescription = null)
-                },
-                trailingIcon = {
-                    Column {
-                        Icon(
-                            imageVector = Icons.Outlined.ContentPaste,
-                            contentDescription = null,
-                            modifier = Modifier.clickable {
-                                pasteFromClipboard(context) { pastedText ->
-                                    textToTranslate = pastedText
-                                }
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Icon(
-                            imageVector = Icons.Outlined.Mic,
-                            contentDescription = null,
-                            modifier = Modifier.clickable {
-                                if (checkMicrophonePermission(context)) {
-                                    isRecording = true // Set to true when starting
-                                    startVoiceRecognition(
-                                        context,
-                                        speechRecognizer,
-                                        onResult = { recognizedText ->
-                                            textToTranslate = recognizedText
-                                            isRecording = false // Reset after getting result
-                                        },
-                                        onError = {
-                                            isRecording = false // Reset if error occurs
-                                        })
-                                } else {
-                                    requestMicrophonePermission(context as Activity)
-                                }
-                            }
-                        )
-                    }
-                },
-                label = { Text(text = "Write/Paste Text to Translate") },
-                shape = RoundedCornerShape(20.dp),
-                singleLine = false,
-                minLines = 10,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp)
-            )
-
-            if (isRecording) {
+                .padding(16.dp)) {
                 Text(
-                    "Listening...",
-                    color = colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    "Translator",
+                    style = MaterialTheme.typography.h5,
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
-                CircularProgressIndicator(
-                    color = colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                Divider()
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Translate") },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        }
+                    }
                 )
             }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp)
-            ) {
-                Text(text = "From:", modifier = Modifier.align(Alignment.CenterVertically))
-                ExposedDropdownMenuBox(
-                    expanded = expandedFrom,
-                    onExpandedChange = { expandedFrom = !expandedFrom }) {
+        ) { paddingValues ->
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
+                        .navigationBarsPadding()
+                        .statusBarsPadding(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     OutlinedTextField(
-                        readOnly = true,
-                        value = selectedFromLanguage,
-                        onValueChange = {},
-                        shape = RoundedCornerShape(20.dp),
-                        label = { Text("Select Language") },
-                        trailingIcon = {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                        },
-                        modifier = Modifier.padding(horizontal = 20.dp),
+                        value = textToTranslate,
+                        onValueChange = { textToTranslate = it },
                         colors = TextFieldDefaults.textFieldColors(
-                            backgroundColor = colorScheme.background,
+                            textColor = colorScheme.onBackground,
                             cursorColor = colorScheme.onBackground
-                        )
+                        ),
+                        leadingIcon = {
+                            Icon(imageVector = Icons.Outlined.Translate, contentDescription = null)
+                        },
+                        trailingIcon = {
+                            Column {
+                                Icon(
+                                    imageVector = Icons.Outlined.ContentPaste,
+                                    contentDescription = null,
+                                    modifier = Modifier.clickable {
+                                        pasteFromClipboard(context) { pastedText ->
+                                            textToTranslate = pastedText
+                                        }
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Icon(
+                                    imageVector = Icons.Outlined.Mic,
+                                    contentDescription = null,
+                                    modifier = Modifier.clickable {
+                                        if (checkMicrophonePermission(context)) {
+                                            isRecording = true // Set to true when starting
+                                            startVoiceRecognition(
+                                                context,
+                                                speechRecognizer,
+                                                onResult = { recognizedText ->
+                                                    textToTranslate = recognizedText
+                                                    isRecording =
+                                                        false // Reset after getting result
+                                                },
+                                                onError = {
+                                                    isRecording = false // Reset if error occurs
+                                                })
+                                        } else {
+                                            requestMicrophonePermission(context as Activity)
+                                        }
+                                    }
+                                )
+                            }
+                        },
+                        label = { Text(text = "Write/Paste Text to Translate") },
+                        shape = RoundedCornerShape(20.dp),
+                        singleLine = false,
+                        minLines = 10,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp)
                     )
 
-                    ExposedDropdownMenu(
-                        expanded = expandedFrom,
-                        onDismissRequest = { expandedFrom = false }
+                    if (isRecording) {
+                        Text(
+                            "Listening...",
+                            color = colorScheme.primary,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                        CircularProgressIndicator(
+                            color = colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp)
                     ) {
-                        availableLanguages.value!!.forEach { language ->
-                            DropdownMenuItem(onClick = {
-                                selectedFromLanguage = language.name
-                                expandedFrom = false
-                            }) {
-                                Text(text = language.name)
+                        Text(text = "From:", modifier = Modifier.align(Alignment.CenterVertically))
+                        ExposedDropdownMenuBox(
+                            expanded = expandedFrom,
+                            onExpandedChange = { expandedFrom = !expandedFrom }) {
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = selectedFromLanguage,
+                                onValueChange = {},
+                                shape = RoundedCornerShape(20.dp),
+                                label = { Text("Select Language") },
+                                trailingIcon = {
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                },
+                                modifier = Modifier.padding(horizontal = 20.dp),
+                                colors = TextFieldDefaults.textFieldColors(
+                                    backgroundColor = colorScheme.background,
+                                    cursorColor = colorScheme.onBackground
+                                )
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = expandedFrom,
+                                onDismissRequest = { expandedFrom = false }
+                            ) {
+                                availableLanguages.value!!.forEach { language ->
+                                    DropdownMenuItem(onClick = {
+                                        selectedFromLanguage = language.name
+                                        expandedFrom = false
+                                    }) {
+                                        Text(text = language.name)
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp)
-            ) {
-                Text(text = "To:    ", modifier = Modifier.align(Alignment.CenterVertically))
-                ExposedDropdownMenuBox(
-                    expanded = expandedTo,
-                    onExpandedChange = { expandedTo = !expandedTo }) {
-                    OutlinedTextField(
-                        readOnly = true,
-                        value = selectedToLanguage,
-                        onValueChange = {},
-                        shape = RoundedCornerShape(20.dp),
-                        label = { Text("Select Language") },
-                        trailingIcon = {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                        },
-                        modifier = Modifier.padding(horizontal = 20.dp),
-                        colors = TextFieldDefaults.textFieldColors(
-                            backgroundColor = colorScheme.background,
-                            cursorColor = colorScheme.onBackground
-                        )
-                    )
-
-                    ExposedDropdownMenu(
-                        expanded = expandedTo,
-                        onDismissRequest = { expandedTo = false }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp)
                     ) {
-                        filteredLanguages.forEach { language ->
-                            DropdownMenuItem(onClick = {
-                                selectedToLanguage = language.name
-                                expandedTo = false
-                            }) {
-                                Text(text = language.name)
+                        Text(
+                            text = "To:    ",
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        )
+                        ExposedDropdownMenuBox(
+                            expanded = expandedTo,
+                            onExpandedChange = { expandedTo = !expandedTo }) {
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = selectedToLanguage,
+                                onValueChange = {},
+                                shape = RoundedCornerShape(20.dp),
+                                label = { Text("Select Language") },
+                                trailingIcon = {
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                                },
+                                modifier = Modifier.padding(horizontal = 20.dp),
+                                colors = TextFieldDefaults.textFieldColors(
+                                    backgroundColor = colorScheme.background,
+                                    cursorColor = colorScheme.onBackground
+                                )
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = expandedTo,
+                                onDismissRequest = { expandedTo = false }
+                            ) {
+                                filteredLanguages.forEach { language ->
+                                    DropdownMenuItem(onClick = {
+                                        selectedToLanguage = language.name
+                                        expandedTo = false
+                                    }) {
+                                        Text(text = language.name)
+                                    }
+                                }
                             }
                         }
                     }
+
+                    Button(onClick = {
+                        viewModel.translateToData(
+                            context = context,
+                            textToTranslate,
+                            selectedFromLanguage,
+                            selectedToLanguage,
+                            onSuccessful = {
+                                Toast.makeText(
+                                    context,
+                                    "Translation Successful",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                Log.d("Navigation1", "Navigation called in the lambda")
+                                result.value = it
+                                Log.d("Result", result.value)
+                                isSuccess.value = true
+                            })
+                    }) {
+                        Text(text = "Translate")
+                    }
+                }
+
+                DisposableEffect(Unit) {
+                    onDispose {
+                        speechRecognizer.destroy()
+                    }
+                }
+                if (isLoading.value) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.7f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
                 }
             }
+        }
+    }
+}
 
-            Button(onClick = {
-                //navigateToDetais(navController, selectedFromLanguage, "it", selectedFromLanguage, selectedToLanguage)
-                viewModel.translateToData(
-                    context = context,
-                    textToTranslate,
-                    selectedFromLanguage,
-                    selectedToLanguage,
-                    onSuccessful = {
-                        Toast.makeText(context, "Translation Successful", Toast.LENGTH_SHORT).show()
-                        Log.d("Navigation1","Navigation called in the lambda")
-                        result.value = it
-                        Log.d("Result", result.value)
-                        isSuccess.value = true
-                    })
-            }) {
-                Text(text = "Translate")
-            }
-        }
-
-        DisposableEffect(Unit) {
-            onDispose {
-                speechRecognizer.destroy()
-            }
-        }
-        if (isLoading.value){
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center){
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            }
-        }
+@Composable
+fun DrawerItem() {
+    Column {
+        
     }
 }
 
