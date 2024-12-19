@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.easy.translator.EasyTranslator
 import com.easy.translator.LanguagesModel
 import com.google.firebase.auth.FirebaseAuth
@@ -13,6 +14,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.launch
+import uk.ac.tees.mad.tt.data.local.TranslatedItemsDao
+import uk.ac.tees.mad.tt.models.TranslatedItem
 import uk.ac.tees.mad.tt.models.User
 import javax.inject.Inject
 
@@ -21,12 +25,14 @@ class TranlatorViewmodel @Inject constructor(
     private val authentication: FirebaseAuth,
     private val firestore: FirebaseFirestore,
     private val storage: FirebaseStorage,
+    private val translatedItemsDao: TranslatedItemsDao
 ) : ViewModel() {
 
     val loadingInApp = mutableStateOf(false)
     val userData = mutableStateOf(User())
     val loggedIn = mutableStateOf(false)
     val availableLanguages = mutableStateOf<List<LanguagesModel>?>(null)
+    val savedOffline = mutableStateOf<List<TranslatedItem>?>(null)
 
     init {
         if (authentication.currentUser != null) {
@@ -113,5 +119,19 @@ class TranlatorViewmodel @Inject constructor(
         )
     }
 
+    fun saveToDatabase(from: String, result: String, fromLang: String, toLang: String) {
+        val translatedItem = TranslatedItem(from = from, result = result, fromLang = fromLang, toLang = toLang)
+        viewModelScope.launch {
+            translatedItemsDao.insert(translatedItem)
+            fetchFromDatabse()
+        }
+    }
+
+    fun fetchFromDatabse(){
+        viewModelScope.launch {
+            savedOffline.value = translatedItemsDao.getAllTranslatedItems()
+            Log.d("TAG", "fetchFromDatabse: $savedOffline")
+        }
+    }
 
 }

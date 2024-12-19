@@ -40,9 +40,17 @@ import uk.ac.tees.mad.tt.TranlatorViewmodel
 import java.util.Locale
 
 @Composable
-fun Result(navHostController: NavHostController,viewmodel: TranlatorViewmodel, from: String, result: String, fromLang: String, toLang: String) {
+fun Result(
+    navHostController: NavHostController,
+    viewmodel: TranlatorViewmodel,
+    from: String,
+    result: String,
+    fromLang: String,
+    toLang: String,
+) {
     val context = LocalContext.current
-    val clipboardManager: androidx.compose.ui.platform.ClipboardManager = LocalClipboardManager.current
+    val clipboardManager: androidx.compose.ui.platform.ClipboardManager =
+        LocalClipboardManager.current
 
     var tts: TextToSpeech? = remember { null }
     DisposableEffect(context) {
@@ -68,7 +76,12 @@ fun Result(navHostController: NavHostController,viewmodel: TranlatorViewmodel, f
             elevation = 20.dp
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text(text = result, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text(
+                    text = result,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(text = from, fontSize = 15.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(10.dp))
@@ -116,7 +129,17 @@ fun Result(navHostController: NavHostController,viewmodel: TranlatorViewmodel, f
                 }
             }
         }
-        Icon(imageVector = Icons.Outlined.Save, contentDescription = "save to database",modifier = Modifier.align(Alignment.End).padding(end = 40.dp))
+        Icon(
+            imageVector = Icons.Outlined.Save,
+            contentDescription = "save to database",
+            modifier = Modifier
+                .align(Alignment.End)
+                .padding(end = 40.dp)
+                .clickable {
+                    viewmodel.saveToDatabase(from = from, result = result, fromLang = fromLang, toLang = toLang)
+                    Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
+                }
+        )
     }
 }
 
