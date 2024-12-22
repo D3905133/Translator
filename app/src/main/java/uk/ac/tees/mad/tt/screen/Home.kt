@@ -181,7 +181,7 @@ fun Home(navController: NavHostController, viewModel: TranlatorViewmodel) {
                         )
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = { /*TODO*/ }, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    Button(onClick = { navController.navigate(AppNavComp.Favorite.destination) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                         shape = RoundedCornerShape(20.dp)
                     ) {
                         Text(text = "Saved Translations")

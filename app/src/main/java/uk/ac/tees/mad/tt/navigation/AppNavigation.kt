@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import uk.ac.tees.mad.tt.TranlatorViewmodel
+import uk.ac.tees.mad.tt.screen.Favorite
 import uk.ac.tees.mad.tt.screen.Home
 import uk.ac.tees.mad.tt.screen.Login
 import uk.ac.tees.mad.tt.screen.Result
@@ -48,6 +49,9 @@ fun AppNavigation() {
                 val toLang = backStackEntry.arguments?.getString("toLang") ?: ""
 
                 Result(navController, viewModel, from, result, fromLang, toLang)
+            }
+            composable(AppNavComp.Favorite.destination) {
+                Favorite(viewModel,navController)
             }
         }
     }

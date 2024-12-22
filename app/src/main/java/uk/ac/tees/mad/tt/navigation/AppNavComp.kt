@@ -10,4 +10,5 @@ sealed class AppNavComp(val destination : String) {
             return "result/$from/$result/$fromLang/$toLang"
         }
     }
+    object Favorite : AppNavComp("favorite")
 }
