@@ -40,6 +40,7 @@ class TranlatorViewmodel @Inject constructor(
     init {
         if (authentication.currentUser != null) {
             retrieveUserData()
+            fetchFromDatabse()
             loggedIn.value = true
         }
     }
@@ -173,6 +174,13 @@ class TranlatorViewmodel @Inject constructor(
         authentication.signOut()
         loggedIn.value = false
         userData.value = User()
+    }
+
+    fun deleteFromDatabase(item: TranslatedItem) {
+        viewModelScope.launch {
+            translatedItemsDao.delete(item)
+            fetchFromDatabse()
+        }
     }
 
 }

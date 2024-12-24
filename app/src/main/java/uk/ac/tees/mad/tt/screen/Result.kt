@@ -3,6 +3,7 @@ package uk.ac.tees.mad.tt.screen
 import android.content.Context
 import android.content.Intent
 import android.speech.tts.TextToSpeech
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Speaker
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +41,8 @@ import androidx.navigation.NavHostController
 import uk.ac.tees.mad.tt.TranlatorViewmodel
 import java.util.Locale
 
+private const val TAG = "ResultScreenTTS"
+
 @Composable
 fun Result(
     navHostController: NavHostController,
@@ -49,17 +53,30 @@ fun Result(
     toLang: String,
 ) {
     val context = LocalContext.current
-    val clipboardManager: androidx.compose.ui.platform.ClipboardManager =
-        LocalClipboardManager.current
+    val clipboardManager = LocalClipboardManager.current
 
     var tts: TextToSpeech? = remember { null }
+    val isTtsInitialized = remember { mutableStateOf(false) }
     DisposableEffect(context) {
-        tts = TextToSpeech(context) {
-            if (it == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
+        Log.d(TAG, "Initializing TextToSpeech")
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                Log.d(TAG, "TextToSpeech initialized successfully")
+                val languageResult = tts?.setLanguage(Locale.US)
+                if (languageResult == TextToSpeech.LANG_MISSING_DATA || languageResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.e(TAG, "Language not supported")
+                    Toast.makeText(context, "Language not supported", Toast.LENGTH_SHORT).show()
+                } else {
+                    isTtsInitialized.value = true
+                    Log.d(TAG, "Language set successfully")
+                }
+            } else {
+                Log.e(TAG, "TTS Initialization failed with status: $status")
+                Toast.makeText(context, "TTS Initialization failed", Toast.LENGTH_SHORT).show()
             }
         }
         onDispose {
+            Log.d(TAG, "Shutting down TextToSpeech")
             tts?.shutdown()
         }
     }
@@ -88,6 +105,7 @@ fun Result(
                 Text(text = "From : $fromLang", fontSize = 10.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(5.dp))
                 Text(text = "To : $toLang", fontSize = 10.sp, color = Color.Gray)
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -99,7 +117,17 @@ fun Result(
                         contentDescription = "speak",
                         modifier = Modifier
                             .clickable {
-                                tts?.speak(result, TextToSpeech.QUEUE_FLUSH, null, null)
+                                if (isTtsInitialized.value) {
+                                    Log.d(TAG, "Attempting to speak text: $result")
+                                    val speakStatus = tts?.speak(result, TextToSpeech.QUEUE_FLUSH, null, null)
+                                    if (speakStatus == TextToSpeech.ERROR) {
+                                        Log.e(TAG, "Error in speaking text")
+                                        Toast.makeText(context, "Error in speaking text", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    Log.e(TAG, "TTS not initialized")
+                                    Toast.makeText(context, "TTS not initialized", Toast.LENGTH_SHORT).show()
+                                }
                             }
                             .padding(8.dp)
                     )
@@ -129,6 +157,7 @@ fun Result(
                 }
             }
         }
+
         Icon(
             imageVector = Icons.Outlined.Save,
             contentDescription = "save to database",
