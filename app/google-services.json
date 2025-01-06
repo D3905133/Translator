@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "321582476194",
-    "project_id": "translator-64171",
+    "project_number": "241277326895",
+    "project_id": "translator-ee112",
     "storage_bucket": "translator-64171.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:321582476194:android:440f181ce8c1be04aba0fb",
+        "mobilesdk_app_id": "1:241277326895:android:ea566cca72f9b120fb98da",
         "android_client_info": {
           "package_name": "uk.ac.tees.mad.tt"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAqdZ639dO6l6F0EZGinCH_HUhf_bcIVuU"
+          "current_key": "AIzaSyAtow3zyVqPRQ5znabf35gHzzh3x7ZKdCo"
         }
       ],
       "services": {
